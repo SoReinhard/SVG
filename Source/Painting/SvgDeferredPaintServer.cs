@@ -80,10 +80,10 @@ namespace Svg
             }
         }
 
-        public override Brush GetBrush(SvgVisualElement styleOwner, ISvgRenderer renderer, float opacity, bool forStroke = false)
+        public override Color GetColor(SvgVisualElement styleOwner, ISvgRenderer renderer, float opacity, bool forStroke = false)
         {
             EnsureServer(styleOwner);
-            return (_concreteServer ?? _fallbackServer ?? NotSet).GetBrush(styleOwner, renderer, opacity, forStroke);
+            return (_concreteServer ?? _fallbackServer ?? NotSet).GetColor(styleOwner, renderer, opacity, forStroke);
         }
 
         public override SvgElement DeepCopy()

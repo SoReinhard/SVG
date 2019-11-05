@@ -1,5 +1,5 @@
-using System.Drawing.Drawing2D;
 using System.Globalization;
+using System.Numerics;
 
 namespace Svg.Transforms
 {
@@ -9,13 +9,11 @@ namespace Svg.Transforms
 
         public float Y { get; set; }
 
-        public override Matrix Matrix
+        public override Matrix3x2 Matrix
         {
             get
             {
-                var matrix = new Matrix();
-                matrix.Scale(X, Y);
-                return matrix;
+                return Matrix3x2.CreateScale(X, Y);
             }
         }
 

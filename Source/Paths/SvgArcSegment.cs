@@ -1,7 +1,6 @@
 using System;
-using System.Drawing;
-using System.Drawing.Drawing2D;
 using System.Globalization;
+using System.Numerics;
 
 namespace Svg.Pathing
 {
@@ -20,7 +19,7 @@ namespace Svg.Pathing
 
         public SvgArcSize Size { get; set; }
 
-        public SvgArcSegment(PointF start, float radiusX, float radiusY, float angle, SvgArcSize size, SvgArcSweep sweep, PointF end)
+        public SvgArcSegment(Vector2 start, float radiusX, float radiusY, float angle, SvgArcSize size, SvgArcSweep sweep, Vector2 end)
             : base(start, end)
         {
             RadiusX = Math.Abs(radiusX);
@@ -45,6 +44,11 @@ namespace Svg.Pathing
 
         public override void AddToPath(GraphicsPath graphicsPath)
         {
+            AddToPath(graphicsPath, Start, End, RadiusX, RadiusY, Angle, Size, Sweep);
+        }
+
+        public static void AddToPath(GraphicsPath graphicsPath, Vector2 Start, Vector2 End, float RadiusX, float RadiusY, float Angle, SvgArcSize Size, SvgArcSweep Sweep)
+        {
             if (Start == End)
             {
                 return;
@@ -52,7 +56,7 @@ namespace Svg.Pathing
 
             if (RadiusX == 0.0f && RadiusY == 0.0f)
             {
-                graphicsPath.AddLine(Start, End);
+                graphicsPath.AddElement(new LineElement(Start, End));
                 return;
             }
 
@@ -123,8 +127,11 @@ namespace Svg.Pathing
                 var dxe = t * (cosPhi * rx * sinTheta2 + sinPhi * ry * cosTheta2);
                 var dye = t * (sinPhi * rx * sinTheta2 - cosPhi * ry * cosTheta2);
 
-                graphicsPath.AddBezier(startX, startY, (float)(startX + dx1), (float)(startY + dy1),
-                    (float)(endpointX + dxe), (float)(endpointY + dye), (float)endpointX, (float)endpointY);
+                graphicsPath.AddElement(new BezierElement(
+                    startX, startY,
+                    (float)(startX + dx1), (float)(startY + dy1),
+                    (float)(endpointX + dxe), (float)(endpointY + dye),
+                    (float)endpointX, (float)endpointY));
 
                 theta1 = theta2;
                 startX = (float)endpointX;

@@ -2,16 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Drawing;
 using System.Globalization;
 using System.Linq;
+using System.Numerics;
 using Svg.Pathing;
 
 namespace Svg
 {
-    public static class PointFExtensions
+    public static class Vector2Extensions
     {
-        public static string ToSvgString(this PointF p)
+        public static string ToSvgString(this System.Numerics.Vector2 p)
         {
             return p.X.ToString(CultureInfo.InvariantCulture) + " " + p.Y.ToString(CultureInfo.InvariantCulture);
         }
@@ -166,7 +166,7 @@ namespace Svg
             }
         }
 
-        private static PointF Reflect(PointF point, PointF mirror)
+        private static Vector2 Reflect(Vector2 point, Vector2 mirror)
         {
             var dx = Math.Abs(mirror.X - point.X);
             var dy = Math.Abs(mirror.Y - point.Y);
@@ -174,7 +174,7 @@ namespace Svg
             var x = mirror.X + (mirror.X >= point.X ? dx : -dx);
             var y = mirror.Y + (mirror.Y >= point.Y ? dy : -dy);
 
-            return new PointF(x, y);
+            return new Vector2(x, y);
         }
 
         /// <summary>
@@ -184,8 +184,8 @@ namespace Svg
         /// <param name="y">Raw Y-coordinate value.</param>
         /// <param name="segments">Current path segments.</param>
         /// <param name="isRelativeBoth"><b>true</b> if <paramref name="x"/> and <paramref name="y"/> contains relative coordinate values, otherwise <b>false</b>.</param>
-        /// <returns><see cref="PointF"/> that contains absolute coordinates.</returns>
-        private static PointF ToAbsolute(float x, float y, SvgPathSegmentList segments, bool isRelativeBoth)
+        /// <returns><see cref="Vector2"/> that contains absolute coordinates.</returns>
+        private static Vector2 ToAbsolute(float x, float y, SvgPathSegmentList segments, bool isRelativeBoth)
         {
             return ToAbsolute(x, y, segments, isRelativeBoth, isRelativeBoth);
         }
@@ -198,10 +198,10 @@ namespace Svg
         /// <param name="segments">Current path segments.</param>
         /// <param name="isRelativeX"><b>true</b> if <paramref name="x"/> contains relative coordinate value, otherwise <b>false</b>.</param>
         /// <param name="isRelativeY"><b>true</b> if <paramref name="y"/> contains relative coordinate value, otherwise <b>false</b>.</param>
-        /// <returns><see cref="PointF"/> that contains absolute coordinates.</returns>
-        private static PointF ToAbsolute(float x, float y, SvgPathSegmentList segments, bool isRelativeX, bool isRelativeY)
+        /// <returns><see cref="Vector2"/> that contains absolute coordinates.</returns>
+        private static Vector2 ToAbsolute(float x, float y, SvgPathSegmentList segments, bool isRelativeX, bool isRelativeY)
         {
-            var point = new PointF(x, y);
+            var point = new Vector2(x, y);
 
             if ((isRelativeX || isRelativeY) && segments.Count > 0)
             {

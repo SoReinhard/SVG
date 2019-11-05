@@ -1,11 +1,11 @@
 using System;
-using System.Drawing.Drawing2D;
+using System.Numerics;
 
 namespace Svg.Transforms
 {
     public abstract class SvgTransform : ICloneable
     {
-        public abstract Matrix Matrix { get; }
+        public abstract Matrix3x2 Matrix { get; }
         public abstract string WriteToString();
 
         public abstract object Clone();

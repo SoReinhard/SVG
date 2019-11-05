@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Drawing;
-using System.Drawing.Drawing2D;
 using System.Linq;
+using System.Numerics;
 using System.Reflection;
 using System.Text;
 using System.Xml;
@@ -42,79 +41,9 @@ namespace Svg
         private EventHandlerList _eventHandlers;
         private SvgElementCollection _children;
         private static readonly object _loadEventKey = new object();
-        private Matrix _graphicsTransform;
-        private Region _graphicsClip;
+        private Matrix3x2 _graphicsTransform;
         private SvgCustomAttributeCollection _customAttributes;
         private List<ISvgNode> _nodes = new List<ISvgNode>();
-
-        private Dictionary<string, SortedDictionary<int, string>> _styles = new Dictionary<string, SortedDictionary<int, string>>();
-
-        /// <summary>
-        /// Add style.
-        /// </summary>
-        /// <param name="name">The style name.</param>
-        /// <param name="value">The style value.</param>
-        /// <param name="specificity">The specificity value.</param>
-        public void AddStyle(string name, string value, int specificity)
-        {
-            SortedDictionary<int, string> rules;
-            if (!_styles.TryGetValue(name, out rules))
-            {
-                rules = new SortedDictionary<int, string>();
-                _styles[name] = rules;
-            }
-            while (rules.ContainsKey(specificity)) ++specificity;
-            rules[specificity] = value;
-        }
-
-        /// <summary>
-        /// Flush styles.
-        /// </summary>
-        /// <param name="children">If true, flush styles to the children.</param>
-        public void FlushStyles(bool children = false)
-        {
-            FlushStyles();
-            if (children)
-                foreach (var child in Children)
-                    child.FlushStyles(children);
-        }
-
-        private void FlushStyles()
-        {
-            if (_styles.Any())
-            {
-                var styles = new Dictionary<string, SortedDictionary<int, string>>();
-                foreach (var s in _styles)
-                    if (!SvgElementFactory.SetPropertyValue(this, s.Key, s.Value.Last().Value, OwnerDocument, true))
-                        styles.Add(s.Key, s.Value);
-                _styles = styles;
-            }
-        }
-
-        public bool ContainsAttribute(string name)
-        {
-            SortedDictionary<int, string> rules;
-            return (this.Attributes.ContainsKey(name) || this.CustomAttributes.ContainsKey(name) ||
-                (_styles.TryGetValue(name, out rules)) && (rules.ContainsKey(StyleSpecificity_InlineStyle) || rules.ContainsKey(StyleSpecificity_PresAttribute)));
-        }
-        public bool TryGetAttribute(string name, out string value)
-        {
-            object objValue;
-            if (this.Attributes.TryGetValue(name, out objValue))
-            {
-                value = objValue.ToString();
-                return true;
-            }
-            if (this.CustomAttributes.TryGetValue(name, out value)) return true;
-            SortedDictionary<int, string> rules;
-            if (_styles.TryGetValue(name, out rules))
-            {
-                // Get staged styles that are 
-                if (rules.TryGetValue(StyleSpecificity_InlineStyle, out value)) return true;
-                if (rules.TryGetValue(StyleSpecificity_PresAttribute, out value)) return true;
-            }
-            return false;
-        }
 
         /// <summary>
         /// Gets the name of the element.
@@ -319,25 +248,17 @@ namespace Svg
         protected internal virtual bool PushTransforms(ISvgRenderer renderer)
         {
             _graphicsTransform = renderer.Transform;
-            _graphicsClip = renderer.GetClip();
 
             var transforms = Transforms;
             // Return if there are no transforms
             if (transforms == null || transforms.Count == 0)
                 return true;
 
-            using (var transformMatrix = transforms.GetMatrix())
-            {
-                using (var zeroMatrix = new Matrix(0f, 0f, 0f, 0f, 0f, 0f))
-                    if (zeroMatrix.Equals(transformMatrix))
-                        return false;
+            var transformMatrix = transforms.GetMatrix();
+            if (transformMatrix.IsIdentity)
+                return false;
 
-                using (var graphicsTransform = _graphicsTransform.Clone())
-                {
-                    graphicsTransform.Multiply(transformMatrix);
-                    renderer.Transform = graphicsTransform;
-                }
-            }
+            renderer.Transform = Matrix3x2.Multiply(transformMatrix, _graphicsTransform);
 
             return true;
         }
@@ -349,10 +270,6 @@ namespace Svg
         protected internal virtual void PopTransforms(ISvgRenderer renderer)
         {
             renderer.Transform = _graphicsTransform;
-            _graphicsTransform.Dispose();
-            _graphicsTransform = null;
-            renderer.SetClip(_graphicsClip);
-            _graphicsClip = null;
         }
 
         /// <summary>
@@ -389,27 +306,6 @@ namespace Svg
                 value.TransformChanged += Attributes_AttributeChanged;
                 Attributes["transform"] = value;
             }
-        }
-
-        /// <summary>
-        /// Transforms the given rectangle with the set transformation, if any.
-        /// Can be applied to bounds calculated without considering the element transformation. 
-        /// </summary>
-        /// <param name="bounds">The rectangle to be transformed.</param>
-        /// <returns>The transformed rectangle, or the original rectangle if no transformation exists.</returns>
-        protected RectangleF TransformedBounds(RectangleF bounds)
-        {
-            if (Transforms != null && Transforms.Count > 0)
-            {
-                using (var path = new GraphicsPath())
-                using (var matrix = Transforms.GetMatrix())
-                {
-                    path.AddRectangle(bounds);
-                    path.Transform(matrix);
-                    return path.GetBounds();
-                }
-            }
-            return bounds;
         }
 
         /// <summary>
@@ -591,7 +487,7 @@ namespace Svg
         protected virtual void WriteAttributes(XmlTextWriter writer)
         {
             //properties
-            var styles = WritePropertyAttributes(writer);
+            WritePropertyAttributes(writer);
 
             //events
             if (AutoPublishEvents)
@@ -612,26 +508,12 @@ namespace Svg
             var additionalStyleValue = string.Empty;
             foreach (var item in this._customAttributes)
             {
-                if (item.Key.Equals("style") && styles.Any())
-                {
-                    additionalStyleValue = item.Value;
-                    continue;
-                }
                 writer.WriteAttributeString(item.Key, item.Value);
-            }
-
-            //write the style property
-            if (styles.Any())
-            {
-                writer.WriteAttributeString("style", (from s in styles
-                                                      select s.Key + ":" + s.Value + ";").Aggregate((p, c) => p + c) + additionalStyleValue);
             }
         }
 
-        private Dictionary<string, string> WritePropertyAttributes(XmlTextWriter writer)
+        private void WritePropertyAttributes(XmlTextWriter writer)
         {
-            var styles = _styles.ToDictionary(_styles => _styles.Key, _styles => _styles.Value.Last().Value);
-
             var opacityAttributes = new List<PropertyAttributeTuple>();
             var opacityValues = new Dictionary<string, float>();
 
@@ -685,12 +567,8 @@ namespace Svg
                                 }
                             }
 
-#if NETFULL
-                            var value = (string)attr.Property.Converter.ConvertTo(propertyValue, typeof(string));
-#else
                             // dotnetcore throws exception if input is null
                             var value = propertyValue == null ? null : (string)attr.Property.Converter.ConvertTo(propertyValue, typeof(string));
-#endif
 
                             if (propertyValue != null)
                             {
@@ -699,7 +577,7 @@ namespace Svg
                                 {
                                     if (writeStyle)
                                     {
-                                        styles[attr.Attribute.Name] = value;
+                                        //styles[attr.Attribute.Name] = value;
                                     }
                                     else
                                     {
@@ -711,7 +589,7 @@ namespace Svg
                             {
                                 if (writeStyle)
                                 {
-                                    styles[attr.Attribute.Name] = value;
+                                    //styles[attr.Attribute.Name] = value;
                                 }
                                 else
                                 {
@@ -751,8 +629,6 @@ namespace Svg
             {
                 Writing = false;
             }
-
-            return styles;
         }
 
         public bool AutoPublishEvents = true;
@@ -877,17 +753,16 @@ namespace Svg
                 {
                     if (!(child is SvgGroup))
                     {
-                        var childPath = ((SvgVisualElement)child).Path(null);
-                        if (childPath != null)
-                            using (childPath = (GraphicsPath)childPath.Clone())
-                            {
-                                if (child.Transforms != null)
-                                    using (var matrix = child.Transforms.GetMatrix())
-                                        childPath.Transform(matrix);
+                        var childPath = ((SvgVisualElement)child).Path(null)?.Clone();
+                        if (child.Transforms != null)
+                        {
+                            childPath.Transform(child.Transforms.GetMatrix());
+                        }
 
-                                if (childPath.PointCount > 0)
-                                    path.AddPath(childPath, false);
-                            }
+                        if (!childPath.IsEmpty)
+                        {
+                            path.AddPath(childPath);
+                        }
                     }
                 }
 
@@ -911,13 +786,14 @@ namespace Svg
                     if (child is SvgGroup)
                     {
                         var childPath = GetPaths(child, renderer);
-                        if (childPath.PointCount > 0)
+                        if (!childPath.IsEmpty)
                         {
                             if (child.Transforms != null)
-                                using (var matrix = child.Transforms.GetMatrix())
-                                    childPath.Transform(matrix);
+                            {
+                                childPath.Transform(child.Transforms.GetMatrix());
+                            }
 
-                            ret.AddPath(childPath, false);
+                            ret.AddPath(childPath);
                         }
                     }
                     else
@@ -929,17 +805,18 @@ namespace Svg
                         if (child.Children.Count > 0)
                         {
                             var descendantPath = GetPaths(child, renderer);
-                            if (descendantPath.PointCount > 0)
-                                childPath.AddPath(descendantPath, false);
+                            if (!descendantPath.IsEmpty)
+                                childPath.AddPath(descendantPath);
                         }
 
-                        if (childPath.PointCount > 0)
+                        if (!childPath.IsEmpty)
                         {
                             if (child.Transforms != null)
-                                using (var matrix = child.Transforms.GetMatrix())
-                                    childPath.Transform(matrix);
+                            {
+                                childPath.Transform(child.Transforms.GetMatrix());
+                            }
 
-                            ret.AddPath(childPath, false);
+                            ret.AddPath(childPath);
                         }
                     }
                 }
@@ -1063,49 +940,6 @@ namespace Svg
             onmouseout = "<anything>" 
          */
 
-#if Net4
-        /// <summary>
-        /// Use this method to provide your implementation ISvgEventCaller which can register Actions 
-        /// and call them if one of the events occurs. Make sure, that your SvgElement has a unique ID.
-        /// The SvgTextElement overwrites this and regsiters the Change event tor its text content.
-        /// </summary>
-        /// <param name="caller"></param>
-        public virtual void RegisterEvents(ISvgEventCaller caller)
-        {
-            if (caller != null && !string.IsNullOrEmpty(this.ID))
-            {
-                var rpcID = this.ID + "/";
-
-                caller.RegisterAction<float, float, int, int, bool, bool, bool, string>(rpcID + "onclick", CreateMouseEventAction(RaiseMouseClick));
-                caller.RegisterAction<float, float, int, int, bool, bool, bool, string>(rpcID + "onmousedown", CreateMouseEventAction(RaiseMouseDown));
-                caller.RegisterAction<float, float, int, int, bool, bool, bool, string>(rpcID + "onmouseup", CreateMouseEventAction(RaiseMouseUp));
-                caller.RegisterAction<float, float, int, int, bool, bool, bool, string>(rpcID + "onmousemove", CreateMouseEventAction(RaiseMouseMove));
-                caller.RegisterAction<float, float, int, int, bool, bool, bool, string>(rpcID + "onmouseover", CreateMouseEventAction(RaiseMouseOver));
-                caller.RegisterAction<float, float, int, int, bool, bool, bool, string>(rpcID + "onmouseout", CreateMouseEventAction(RaiseMouseOut));
-                caller.RegisterAction<int, bool, bool, bool, string>(rpcID + "onmousescroll", OnMouseScroll);
-            }
-        }
-
-        /// <summary>
-        /// Use this method to provide your implementation ISvgEventCaller to unregister Actions
-        /// </summary>
-        /// <param name="caller"></param>
-        public virtual void UnregisterEvents(ISvgEventCaller caller)
-        {
-            if (caller != null && !string.IsNullOrEmpty(this.ID))
-            {
-                var rpcID = this.ID + "/";
-
-                caller.UnregisterAction(rpcID + "onclick");
-                caller.UnregisterAction(rpcID + "onmousedown");
-                caller.UnregisterAction(rpcID + "onmouseup");
-                caller.UnregisterAction(rpcID + "onmousemove");
-                caller.UnregisterAction(rpcID + "onmousescroll");
-                caller.UnregisterAction(rpcID + "onmouseover");
-                caller.UnregisterAction(rpcID + "onmouseout");
-            }
-        }
-#endif
 
         [SvgAttribute("onclick")]
         public event EventHandler<MouseArg> Click;
@@ -1127,14 +961,6 @@ namespace Svg
 
         [SvgAttribute("onmouseout")]
         public event EventHandler<MouseArg> MouseOut;
-
-#if Net4
-        protected Action<float, float, int, int, bool, bool, bool, string> CreateMouseEventAction(Action<object, MouseArg> eventRaiser)
-        {
-            return (x, y, button, clickCount, altKey, shiftKey, ctrlKey, sessionID) =>
-                eventRaiser(this, new MouseArg { x = x, y = y, Button = button, ClickCount = clickCount, AltKey = altKey, ShiftKey = shiftKey, CtrlKey = ctrlKey, SessionID = sessionID });
-        }
-#endif
 
         //click
         protected void RaiseMouseClick(object sender, MouseArg e)
@@ -1243,23 +1069,6 @@ namespace Svg
         public SvgElement NewChild;
         public SvgElement BeforeSibling;
     }
-
-#if Net4
-    //deriving class registers event actions and calls the actions if the event occurs
-    public interface ISvgEventCaller
-    {
-        void RegisterAction(string rpcID, Action action);
-        void RegisterAction<T1>(string rpcID, Action<T1> action);
-        void RegisterAction<T1, T2>(string rpcID, Action<T1, T2> action);
-        void RegisterAction<T1, T2, T3>(string rpcID, Action<T1, T2, T3> action);
-        void RegisterAction<T1, T2, T3, T4>(string rpcID, Action<T1, T2, T3, T4> action);
-        void RegisterAction<T1, T2, T3, T4, T5>(string rpcID, Action<T1, T2, T3, T4, T5> action);
-        void RegisterAction<T1, T2, T3, T4, T5, T6>(string rpcID, Action<T1, T2, T3, T4, T5, T6> action);
-        void RegisterAction<T1, T2, T3, T4, T5, T6, T7>(string rpcID, Action<T1, T2, T3, T4, T5, T6, T7> action);
-        void RegisterAction<T1, T2, T3, T4, T5, T6, T7, T8>(string rpcID, Action<T1, T2, T3, T4, T5, T6, T7, T8> action);
-        void UnregisterAction(string rpcID);
-    }
-#endif
 
     /// <summary>
     /// Represents the state of the mouse at the moment the event occured.

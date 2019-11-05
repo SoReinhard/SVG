@@ -1,5 +1,3 @@
-using System.Drawing.Drawing2D;
-
 namespace Svg
 {
     /// <summary>
@@ -67,7 +65,7 @@ namespace Svg
 
                 this._path = new GraphicsPath();
                 _path.StartFigure();
-                _path.AddEllipse(center.X - radiusX, center.Y - radiusY, 2 * radiusX, 2 * radiusY);
+                _path.AddElement(new EllipseElement(center, radiusX, radiusY));
                 _path.CloseFigure();
             }
             return _path;

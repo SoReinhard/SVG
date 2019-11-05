@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Drawing.Drawing2D;
 
 namespace Svg
 {
@@ -101,8 +99,7 @@ namespace Svg
             if (!base.PushTransforms(renderer))
                 return false;
             renderer.TranslateTransform(X.ToDeviceValue(renderer, UnitRenderingType.Horizontal, this),
-                                        Y.ToDeviceValue(renderer, UnitRenderingType.Vertical, this),
-                                        MatrixOrder.Prepend);
+                                        Y.ToDeviceValue(renderer, UnitRenderingType.Vertical, this));
             return true;
         }
 
@@ -120,29 +117,6 @@ namespace Svg
             get { return new SvgPoint(X, Y); }
         }
 
-        /// <summary>
-        /// Gets the bounds of the element.
-        /// </summary>
-        /// <value>The bounds.</value>
-        public override RectangleF Bounds
-        {
-            get
-            {
-                var ew = this.Width.ToDeviceValue(null, UnitRenderingType.Horizontal, this);
-                var eh = this.Height.ToDeviceValue(null, UnitRenderingType.Vertical, this);
-                if (ew > 0 && eh > 0)
-                    return TransformedBounds(new RectangleF(this.Location.ToDeviceValue(null, this),
-                        new SizeF(ew, eh)));
-                var element = this.OwnerDocument.IdManager.GetElementById(this.ReferencedElement) as SvgVisualElement;
-                if (element != null)
-                {
-                    return element.Bounds;
-                }
-
-                return new RectangleF();
-            }
-        }
-
         protected override bool Renderable { get { return false; } }
 
         protected override void Render(ISvgRenderer renderer)
@@ -153,8 +127,6 @@ namespace Svg
                 {
                     if (PushTransforms(renderer))
                     {
-                        SetClip(renderer);
-
                         var element = OwnerDocument.IdManager.GetElementById(ReferencedElement) as SvgVisualElement;
                         if (element != null)
                         {
@@ -167,7 +139,7 @@ namespace Svg
                                 {
                                     var sw = ew / viewBox.Width;
                                     var sh = eh / viewBox.Height;
-                                    renderer.ScaleTransform(sw, sh, MatrixOrder.Prepend);
+                                    renderer.ScaleTransform(sw, sh);
                                 }
                             }
 
@@ -179,8 +151,6 @@ namespace Svg
                             element.RenderElement(renderer);
                             element._parent = origParent;
                         }
-
-                        ResetClip(renderer);
                     }
                 }
                 finally

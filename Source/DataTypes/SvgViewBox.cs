@@ -1,7 +1,6 @@
 using System;
 using System.ComponentModel;
 using System.Drawing;
-using System.Drawing.Drawing2D;
 using System.Globalization;
 
 namespace Svg
@@ -114,7 +113,7 @@ namespace Svg
 
             if (Equals(Empty))
             {
-                renderer.TranslateTransform(x, y, MatrixOrder.Prepend);
+                renderer.TranslateTransform(x, y);
                 return;
             }
 
@@ -183,9 +182,9 @@ namespace Svg
                 }
             }
 
-            renderer.TranslateTransform(x, y, MatrixOrder.Prepend);
-            renderer.TranslateTransform(fMinX, fMinY, MatrixOrder.Prepend);
-            renderer.ScaleTransform(fScaleX, fScaleY, MatrixOrder.Prepend);
+            renderer.TranslateTransform(x, y);
+            renderer.TranslateTransform(fMinX, fMinY);
+            renderer.ScaleTransform(fScaleX, fScaleY);
         }
     }
 

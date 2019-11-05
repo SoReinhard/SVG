@@ -38,62 +38,65 @@ namespace Svg
             set { Attributes["marker-start"] = value; }
         }
 
-        /// <summary>
-        /// Renders the stroke of the element to the specified <see cref="ISvgRenderer"/>.
-        /// Includes rendering of all markers defined in attributes.
-        /// </summary>
-        /// <param name="renderer">The <see cref="ISvgRenderer"/> object to render to.</param>
-        protected internal override bool RenderStroke(ISvgRenderer renderer)
-        {
-            var result = base.RenderStroke(renderer);
-            var path = this.Path(renderer);
-            var pathLength = path.PathPoints.Length;
+        ///// <summary>
+        ///// Renders the stroke of the element to the specified <see cref="ISvgRenderer"/>.
+        ///// Includes rendering of all markers defined in attributes.
+        ///// </summary>
+        ///// <param name="renderer">The <see cref="ISvgRenderer"/> object to render to.</param>
+        ///// <param name="stroke"></param>
+        //protected internal override bool RenderStroke(ISvgRenderer renderer, SvgPaintServer stroke = null)
+        //{
+        //    var result = base.RenderStroke(renderer);
+        //    var path = this.Path(renderer);
 
-            if (this.MarkerStart != null)
-            {
-                var refPoint1 = path.PathPoints[0];
-                var index = 1;
-                while (index < pathLength && path.PathPoints[index] == refPoint1)
-                {
-                    ++index;
-                }
-                var refPoint2 = path.PathPoints[index];
-                SvgMarker marker = this.OwnerDocument.GetElementById<SvgMarker>(this.MarkerStart.ToString());
-                marker.RenderMarker(renderer, this, refPoint1, refPoint1, refPoint2, true);
-            }
+        //    return true;
+        //    //var pathLength = path.PathPoints.Length;
 
-            if (this.MarkerMid != null)
-            {
-                SvgMarker marker = this.OwnerDocument.GetElementById<SvgMarker>(this.MarkerMid.ToString());
-                int bezierIndex = -1;
-                for (int i = 1; i <= path.PathPoints.Length - 2; i++)
-                {
-                    // for Bezier curves, the marker shall only been shown at the last point
-                    if ((path.PathTypes[i] & 7) == 3)
-                        bezierIndex = (bezierIndex + 1) % 3;
-                    else
-                        bezierIndex = -1;
-                    if (bezierIndex == -1 || bezierIndex == 2)
-                        marker.RenderMarker(renderer, this, path.PathPoints[i], path.PathPoints[i - 1], path.PathPoints[i], path.PathPoints[i + 1]);
+        //    //if (this.MarkerStart != null)
+        //    //{
+        //    //    var refPoint1 = path.PathPoints[0];
+        //    //    var index = 1;
+        //    //    while (index < pathLength && path.PathPoints[index] == refPoint1)
+        //    //    {
+        //    //        ++index;
+        //    //    }
+        //    //    var refPoint2 = path.PathPoints[index];
+        //    //    SvgMarker marker = this.OwnerDocument.GetElementById<SvgMarker>(this.MarkerStart.ToString());
+        //    //    marker.RenderMarker(renderer, this, refPoint1, refPoint1, refPoint2, true);
+        //    //}
 
-                }
-            }
+        //    //if (this.MarkerMid != null)
+        //    //{
+        //    //    SvgMarker marker = this.OwnerDocument.GetElementById<SvgMarker>(this.MarkerMid.ToString());
+        //    //    int bezierIndex = -1;
+        //    //    for (int i = 1; i <= path.PathPoints.Length - 2; i++)
+        //    //    {
+        //    //        // for Bezier curves, the marker shall only been shown at the last point
+        //    //        if ((path.PathTypes[i] & 7) == 3)
+        //    //            bezierIndex = (bezierIndex + 1) % 3;
+        //    //        else
+        //    //            bezierIndex = -1;
+        //    //        if (bezierIndex == -1 || bezierIndex == 2)
+        //    //            marker.RenderMarker(renderer, this, path.PathPoints[i], path.PathPoints[i - 1], path.PathPoints[i], path.PathPoints[i + 1]);
 
-            if (this.MarkerEnd != null)
-            {
-                var index = pathLength - 1;
-                var refPoint1 = path.PathPoints[index];
-                --index;
-                while (index > 0 && path.PathPoints[index] == refPoint1)
-                {
-                    --index;
-                }
-                var refPoint2 = path.PathPoints[index];
-                SvgMarker marker = this.OwnerDocument.GetElementById<SvgMarker>(this.MarkerEnd.ToString());
-                marker.RenderMarker(renderer, this, refPoint1, refPoint2, path.PathPoints[path.PathPoints.Length - 1], false);
-            }
+        //    //    }
+        //    //}
 
-            return result;
-        }
+        //    //if (this.MarkerEnd != null)
+        //    //{
+        //    //    var index = pathLength - 1;
+        //    //    var refPoint1 = path.PathPoints[index];
+        //    //    --index;
+        //    //    while (index > 0 && path.PathPoints[index] == refPoint1)
+        //    //    {
+        //    //        --index;
+        //    //    }
+        //    //    var refPoint2 = path.PathPoints[index];
+        //    //    SvgMarker marker = this.OwnerDocument.GetElementById<SvgMarker>(this.MarkerEnd.ToString());
+        //    //    marker.RenderMarker(renderer, this, refPoint1, refPoint2, path.PathPoints[path.PathPoints.Length - 1], false);
+        //    //}
+
+        //    //return result;
+        //}
     }
 }

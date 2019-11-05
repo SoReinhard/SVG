@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using System.Drawing.Drawing2D;
+using System.Numerics;
 
 namespace Svg
 {
@@ -31,6 +31,7 @@ namespace Svg
                 try
                 {
                     var points = this.Points;
+                    Vector2 lastPoint = Vector2.Zero;
                     for (int i = 2; (i + 1) < points.Count; i += 2)
                     {
                         var endPoint = SvgUnit.GetDevicePoint(points[i], points[i + 1], renderer, this);
@@ -40,19 +41,21 @@ namespace Svg
                         if (renderer == null)
                         {
                             var radius = base.StrokeWidth * 2;
-                            _path.AddEllipse(endPoint.X - radius, endPoint.Y - radius, 2 * radius, 2 * radius);
+                            _path.AddElement(new EllipseElement(endPoint, radius, radius));
                             continue;
                         }
 
                         //first line
-                        if (_path.PointCount == 0)
+                        if (i == 2)
                         {
-                            _path.AddLine(SvgUnit.GetDevicePoint(points[i - 2], points[i - 1], renderer, this), endPoint);
+                            _path.AddElement(new LineElement(SvgUnit.GetDevicePoint(points[i - 2], points[i - 1], renderer, this), endPoint));
                         }
                         else
                         {
-                            _path.AddLine(_path.GetLastPoint(), endPoint);
+                            _path.AddElement(new LineElement(lastPoint, endPoint));
                         }
+
+                        lastPoint = endPoint;
                     }
                 }
                 catch
@@ -60,7 +63,7 @@ namespace Svg
                     Trace.TraceError("Error parsing points");
                 }
 
-                this._path.CloseFigure();
+                this._path.CloseFigure(true);
                 if (renderer != null)
                     this.IsPathDirty = false;
             }

@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
 using System.Drawing;
+using System.Numerics;
 
 namespace Svg
 {
@@ -86,38 +87,14 @@ namespace Svg
             var type = this.Type;
             var value = this.Value;
 
-            float points;
-
             switch (type)
             {
                 case SvgUnitType.Em:
-                    using (var currFont = GetFont(renderer, owner))
-                    {
-                        if (currFont == null)
-                        {
-                            points = (float)(value * 9);
-                            _deviceValue = (points / 72.0f) * ppi;
-                        }
-                        else
-                        {
-                            _deviceValue = value * (currFont.SizeInPoints / 72.0f) * ppi;
-                        }
-                    }
+                    _deviceValue = value;
                     break;
                 case SvgUnitType.Ex:
-                    using (var currFont = GetFont(renderer, owner))
-                    {
-                        if (currFont == null)
-                        {
-                            points = (float)(value * 9);
-                            _deviceValue = (points * 0.5f / 72.0f) * ppi;
-                        }
-                        else
-                        {
-                            _deviceValue = value * 0.5f * (currFont.SizeInPoints / 72.0f) * ppi;
-                        }
-                        break;
-                    }
+                    _deviceValue = value;
+                    break;
                 case SvgUnitType.Centimeter:
                     _deviceValue = (float)((value / cmInInch) * ppi);
                     break;
@@ -140,52 +117,13 @@ namespace Svg
                     _deviceValue = value;
                     break;
                 case SvgUnitType.Percentage:
-                    // Can't calculate if there is no style owner
-                    var boundable = (renderer == null ? (owner == null ? null : owner.OwnerDocument) : renderer.GetBoundable());
-                    if (boundable == null)
-                    {
-                        _deviceValue = value;
-                        break;
-                    }
-
-                    System.Drawing.SizeF size = boundable.Bounds.Size;
-
-                    switch (renderType)
-                    {
-                        case UnitRenderingType.Horizontal:
-                            _deviceValue = (size.Width / 100) * value;
-                            break;
-                        case UnitRenderingType.HorizontalOffset:
-                            _deviceValue = (size.Width / 100) * value + boundable.Location.X;
-                            break;
-                        case UnitRenderingType.Vertical:
-                            _deviceValue = (size.Height / 100) * value;
-                            break;
-                        case UnitRenderingType.VerticalOffset:
-                            _deviceValue = (size.Height / 100) * value + boundable.Location.Y;
-                            break;
-                        case UnitRenderingType.Other:
-                            // Calculate a percentage value of the normalized viewBox diagonal length. 
-                            if (owner.OwnerDocument != null && owner.OwnerDocument.ViewBox != null && owner.OwnerDocument.ViewBox.Width != 0 && owner.OwnerDocument.ViewBox.Height != 0)
-                            {
-                                _deviceValue = (float)(Math.Sqrt(Math.Pow(owner.OwnerDocument.ViewBox.Width, 2) + Math.Pow(owner.OwnerDocument.ViewBox.Height, 2)) / Math.Sqrt(2) * value / 100.0);
-                            }
-                            else _deviceValue = (float)(Math.Sqrt(Math.Pow(size.Width, 2) + Math.Pow(size.Height, 2)) / Math.Sqrt(2) * value / 100.0);
-                            break;
-                    }
+                    _deviceValue = value;
                     break;
                 default:
                     _deviceValue = value;
                     break;
             }
             return this._deviceValue.Value;
-        }
-
-        private IFontDefn GetFont(ISvgRenderer renderer, SvgElement owner)
-        {
-            if (owner == null) return null;
-            var visual = owner.Parents.OfType<SvgVisualElement>().FirstOrDefault();
-            return visual != null ? visual.GetFont(renderer) : null;
         }
 
         /// <summary>
@@ -323,20 +261,20 @@ namespace Svg
             this._deviceValue = null;
         }
 
-        public static System.Drawing.PointF GetDevicePoint(SvgUnit x, SvgUnit y, ISvgRenderer renderer, SvgElement owner)
+        public static Vector2 GetDevicePoint(SvgUnit x, SvgUnit y, ISvgRenderer renderer, SvgElement owner)
         {
-            return new System.Drawing.PointF(x.ToDeviceValue(renderer, UnitRenderingType.Horizontal, owner),
+            return new Vector2(x.ToDeviceValue(renderer, UnitRenderingType.Horizontal, owner),
                                              y.ToDeviceValue(renderer, UnitRenderingType.Vertical, owner));
         }
-        public static System.Drawing.PointF GetDevicePointOffset(SvgUnit x, SvgUnit y, ISvgRenderer renderer, SvgElement owner)
+        public static Vector2 GetDevicePointOffset(SvgUnit x, SvgUnit y, ISvgRenderer renderer, SvgElement owner)
         {
-            return new System.Drawing.PointF(x.ToDeviceValue(renderer, UnitRenderingType.HorizontalOffset, owner),
+            return new Vector2(x.ToDeviceValue(renderer, UnitRenderingType.HorizontalOffset, owner),
                                              y.ToDeviceValue(renderer, UnitRenderingType.VerticalOffset, owner));
         }
 
-        public static System.Drawing.SizeF GetDeviceSize(SvgUnit width, SvgUnit height, ISvgRenderer renderer, SvgElement owner)
+        public static Vector2 GetDeviceSize(SvgUnit width, SvgUnit height, ISvgRenderer renderer, SvgElement owner)
         {
-            return new System.Drawing.SizeF(width.ToDeviceValue(renderer, UnitRenderingType.HorizontalOffset, owner),
+            return new Vector2(width.ToDeviceValue(renderer, UnitRenderingType.HorizontalOffset, owner),
                                             height.ToDeviceValue(renderer, UnitRenderingType.VerticalOffset, owner));
         }
     }

@@ -1,7 +1,7 @@
 using System;
 using System.Drawing;
-using System.Drawing.Drawing2D;
 using System.Diagnostics;
+using System.Numerics;
 
 namespace Svg
 {
@@ -21,27 +21,30 @@ namespace Svg
 
                 try
                 {
+                    Vector2 lastPoint = Vector2.Zero;
                     for (int i = 0; (i + 1) < Points.Count; i += 2)
                     {
-                        PointF endPoint = new PointF(Points[i].ToDeviceValue(renderer, UnitRenderingType.Horizontal, this),
+                        Vector2 endPoint = new Vector2(Points[i].ToDeviceValue(renderer, UnitRenderingType.Horizontal, this),
                                                      Points[i + 1].ToDeviceValue(renderer, UnitRenderingType.Vertical, this));
 
                         if (renderer == null)
                         {
                             var radius = base.StrokeWidth / 2;
-                            _Path.AddEllipse(endPoint.X - radius, endPoint.Y - radius, 2 * radius, 2 * radius);
+                            _Path.AddElement(new EllipseElement(endPoint, radius, radius));
                             continue;
                         }
 
                         // TODO: Remove unrequired first line
-                        if (_Path.PointCount == 0)
+                        if (_Path.IsEmpty)
                         {
-                            _Path.AddLine(endPoint, endPoint);
+                            _Path.AddElement(new LineElement(endPoint, endPoint));
                         }
                         else
                         {
-                            _Path.AddLine(_Path.GetLastPoint(), endPoint);
+                            _Path.AddElement(new LineElement(lastPoint, endPoint));
                         }
+
+                        lastPoint = endPoint;
                     }
                 }
                 catch (Exception exc)

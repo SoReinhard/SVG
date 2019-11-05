@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Drawing;
 using System.ComponentModel;
+using System.Numerics;
 
 namespace Svg
 {
@@ -23,7 +23,7 @@ namespace Svg
             set { this.y = value; }
         }
 
-        public PointF ToDeviceValue(ISvgRenderer renderer, SvgElement owner)
+        public Vector2 ToDeviceValue(ISvgRenderer renderer, SvgElement owner)
         {
             return SvgUnit.GetDevicePoint(this.X, this.Y, renderer, owner);
         }

@@ -1,6 +1,8 @@
+using Svg.Pathing;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Drawing2D;
+using System.Numerics;
 
 namespace Svg
 {
@@ -96,20 +98,6 @@ namespace Svg
         }
 
         /// <summary>
-        /// Gets or sets a value to determine if anti-aliasing should occur when the element is being rendered.
-        /// </summary>
-        protected override bool RequiresSmoothRendering
-        {
-            get
-            {
-                if (base.RequiresSmoothRendering)
-                    return (CornerRadiusX.Value > 0.0f || CornerRadiusY.Value > 0.0f);
-                else
-                    return false;
-            }
-        }
-
-        /// <summary>
         /// Gets the <see cref="GraphicsPath"/> for this element.
         /// </summary>
         public override GraphicsPath Path(ISvgRenderer renderer)
@@ -138,19 +126,19 @@ namespace Svg
                     var height = this.Height.ToDeviceValue(renderer, UnitRenderingType.Vertical, this) + halfStrokeWidth * 2;
 
                     var location = strokedLocation.ToDeviceValue(renderer, this);
-                    var rectangle = new RectangleF(location, new SizeF(width, height));
+                    var size = new Vector2(width, height);
 
                     _path = new GraphicsPath();
                     _path.StartFigure();
-                    _path.AddRectangle(rectangle);
+                    _path.AddElement(new RectangleElement(location, size));
                     _path.CloseFigure();
                 }
                 else
                 {
                     _path = new GraphicsPath();
-                    var arcBounds = new RectangleF();
-                    var lineStart = new PointF();
-                    var lineEnd = new PointF();
+
+                    var lineStart = new Vector2();
+                    var lineEnd = new Vector2();
                     var width = Width.ToDeviceValue(renderer, UnitRenderingType.Horizontal, this);
                     var height = Height.ToDeviceValue(renderer, UnitRenderingType.Vertical, this);
                     var rx = Math.Min(CornerRadiusX.ToDeviceValue(renderer, UnitRenderingType.Horizontal, this) * 2, width);
@@ -160,51 +148,54 @@ namespace Svg
                     // Start
                     _path.StartFigure();
 
-                    // Add first arc
-                    arcBounds.Location = location;
-                    arcBounds.Width = rx;
-                    arcBounds.Height = ry;
-                    _path.AddArc(arcBounds, 180, 90);
+                    var lines = new List<LineElement>();
+                    var corners = new List<Vector2>();
 
                     // Add first line
                     lineStart.X = Math.Min(location.X + rx, location.X + width * 0.5f);
                     lineStart.Y = location.Y;
                     lineEnd.X = Math.Max(location.X + width - rx, location.X + width * 0.5f);
                     lineEnd.Y = lineStart.Y;
-                    _path.AddLine(lineStart, lineEnd);
 
-                    // Add second arc
-                    arcBounds.Location = new PointF(location.X + width - rx, location.Y);
-                    _path.AddArc(arcBounds, 270, 90);
+                    lines.Add(new LineElement(lineStart, lineEnd));
+                    corners.Add(location);
 
                     // Add second line
                     lineStart.X = location.X + width;
                     lineStart.Y = Math.Min(location.Y + ry, location.Y + height * 0.5f);
                     lineEnd.X = lineStart.X;
                     lineEnd.Y = Math.Max(location.Y + height - ry, location.Y + height * 0.5f);
-                    _path.AddLine(lineStart, lineEnd);
 
-                    // Add third arc
-                    arcBounds.Location = new PointF(location.X + width - rx, location.Y + height - ry);
-                    _path.AddArc(arcBounds, 0, 90);
+                    lines.Add(new LineElement(lineStart, lineEnd));
+                    corners.Add(new Vector2(location.X + width, location.Y));
 
                     // Add third line
                     lineStart.X = Math.Max(location.X + width - rx, location.X + width * 0.5f);
                     lineStart.Y = location.Y + height;
                     lineEnd.X = Math.Min(location.X + rx, location.X + width * 0.5f);
                     lineEnd.Y = lineStart.Y;
-                    _path.AddLine(lineStart, lineEnd);
 
-                    // Add third arc
-                    arcBounds.Location = new PointF(location.X, location.Y + height - ry);
-                    _path.AddArc(arcBounds, 90, 90);
+                    lines.Add(new LineElement(lineStart, lineEnd));
+                    corners.Add(new Vector2(location.X + width, location.Y + height));
 
                     // Add fourth line
                     lineStart.X = location.X;
                     lineStart.Y = Math.Max(location.Y + height - ry, location.Y + height * 0.5f);
                     lineEnd.X = lineStart.X;
                     lineEnd.Y = Math.Min(location.Y + ry, location.Y + height * 0.5f);
-                    _path.AddLine(lineStart, lineEnd);
+
+                    lines.Add(new LineElement(lineStart, lineEnd));
+                    corners.Add(new Vector2(location.X, location.Y + height));
+
+                    _path.AddElement(lines[0]);
+                    _path.AddElement(lines[1]);
+                    _path.AddElement(lines[2]);
+                    _path.AddElement(lines[3]);
+
+                    addCorner(_path, lines[3].End, corners[0], lines[0].Start, rx, ry);
+                    addCorner(_path, lines[0].End, corners[1], lines[1].Start, rx, ry);
+                    addCorner(_path, lines[1].End, corners[2], lines[2].Start, rx, ry);
+                    addCorner(_path, lines[2].End, corners[3], lines[3].Start, rx, ry);
 
                     // Close
                     _path.CloseFigure();
@@ -213,8 +204,16 @@ namespace Svg
             return _path;
         }
 
+        private void addCorner(GraphicsPath path, Vector2 start, Vector2 corner, Vector2 end, float rx, float ry)
+        {
+            if (rx == ry)
+                SvgArcSegment.AddToPath(_path, start, end, rx, ry, 90, SvgArcSize.Small, SvgArcSweep.Positive);
+            else
+                path.AddElement(new BezierElement(start, corner, corner, end));
+        }
+
         /// <summary>
-        /// Renders the <see cref="SvgElement"/> and contents to the specified <see cref="Graphics"/> object.
+        /// Renders the <see cref="SvgElement"/> and contents to the specified <see cref="ISvgRenderer"/> object.
         /// </summary>
         protected override void Render(ISvgRenderer renderer)
         {

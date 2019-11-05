@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Drawing.Drawing2D;
 
 namespace Svg
 {
@@ -53,11 +52,15 @@ namespace Svg
         protected override GraphicsPath GetBaselinePath(ISvgRenderer renderer)
         {
             var path = this.OwnerDocument.IdManager.GetElementById(this.ReferencedPath) as SvgVisualElement;
-            if (path == null) return null;
-            var pathData = (GraphicsPath)path.Path(renderer).Clone();
+            if (path == null) 
+                return null;
+
+            var pathData = path.Path(renderer).Clone();
             if (path.Transforms != null && path.Transforms.Count > 0)
-                using (var matrix = path.Transforms.GetMatrix())
-                    pathData.Transform(matrix);
+            {
+                pathData.Transform(path.Transforms.GetMatrix());
+            }
+
             return pathData;
         }
         protected override float GetAuthorPathLength()

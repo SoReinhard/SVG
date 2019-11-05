@@ -147,11 +147,6 @@ namespace Svg
         public SvgColourInterpolationConverter() : base(SvgColourInterpolation.SRGB) { }
     }
 
-    public sealed class SvgClipRuleConverter : EnumBaseConverter<SvgClipRule>
-    {
-        public SvgClipRuleConverter() : base(SvgClipRule.NonZero, CaseHandling.LowerCase) { }
-    }
-
     public sealed class SvgTextAnchorConverter : EnumBaseConverter<SvgTextAnchor>
     {
         public SvgTextAnchorConverter() : base(SvgTextAnchor.Start) { }

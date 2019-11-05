@@ -1,5 +1,5 @@
-using System.Drawing.Drawing2D;
 using System.Globalization;
+using System.Numerics;
 
 namespace Svg.Transforms
 {
@@ -11,15 +11,11 @@ namespace Svg.Transforms
 
         public float CenterY { get; set; }
 
-        public override Matrix Matrix
+        public override Matrix3x2 Matrix
         {
             get
             {
-                var matrix = new Matrix();
-                matrix.Translate(CenterX, CenterY);
-                matrix.Rotate(Angle);
-                matrix.Translate(-CenterX, -CenterY);
-                return matrix;
+                return Matrix3x2.CreateRotation(MathHelper.DegToRad * Angle, new Vector2(CenterX, CenterY));
             }
         }
 

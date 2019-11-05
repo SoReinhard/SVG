@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
-using System.Drawing.Drawing2D;
 using System.Globalization;
+using System.Numerics;
 
 namespace Svg.Transforms
 {
@@ -11,11 +11,11 @@ namespace Svg.Transforms
     {
         public List<float> Points { get; set; }
 
-        public override Matrix Matrix
+        public override Matrix3x2 Matrix
         {
             get
             {
-                return new Matrix(
+                return new Matrix3x2(
                     Points[0],
                     Points[1],
                     Points[2],

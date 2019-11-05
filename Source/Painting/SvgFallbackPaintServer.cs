@@ -21,12 +21,12 @@ namespace Svg
             _primary = primary;
         }
 
-        public override Brush GetBrush(SvgVisualElement styleOwner, ISvgRenderer renderer, float opacity, bool forStroke = false)
+        public override Color GetColor(SvgVisualElement styleOwner, ISvgRenderer renderer, float opacity, bool forStroke = false)
         {
             try
             {
                 _primary.GetCallback = () => _fallbacks.FirstOrDefault();
-                return _primary.GetBrush(styleOwner, renderer, opacity, forStroke);
+                return _primary.GetColor(styleOwner, renderer, opacity, forStroke);
             }
             finally
             {

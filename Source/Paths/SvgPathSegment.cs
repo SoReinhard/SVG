@@ -1,18 +1,17 @@
-using System.Drawing;
-using System.Drawing.Drawing2D;
+using System.Numerics;
 
 namespace Svg.Pathing
 {
     public abstract class SvgPathSegment
     {
-        public PointF Start { get; set; }
-        public PointF End { get; set; }
+        public Vector2 Start { get; set; }
+        public Vector2 End { get; set; }
 
         protected SvgPathSegment()
         {
         }
 
-        protected SvgPathSegment(PointF start, PointF end)
+        protected SvgPathSegment(Vector2 start, Vector2 end)
         {
             Start = start;
             End = end;

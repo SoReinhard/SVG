@@ -1,6 +1,5 @@
 using System;
 using System.Drawing;
-using System.Drawing.Drawing2D;
 using System.Xml;
 
 namespace Svg
@@ -9,7 +8,7 @@ namespace Svg
     /// An <see cref="SvgFragment"/> represents an SVG fragment that can be the root element or an embedded fragment of an SVG document.
     /// </summary>
     [SvgElement("svg")]
-    public class SvgFragment : SvgElement, ISvgViewPort, ISvgBoundable
+    public class SvgFragment : SvgElement, ISvgViewPort
     {
         private SvgUnit _x = 0f;
         private SvgUnit _y = 0f;
@@ -18,30 +17,6 @@ namespace Svg
         /// Gets the SVG namespace string.
         /// </summary>
         public static readonly Uri Namespace = new Uri("http://www.w3.org/2000/svg");
-
-        PointF ISvgBoundable.Location
-        {
-            get
-            {
-                return PointF.Empty;
-            }
-        }
-
-        SizeF ISvgBoundable.Size
-        {
-            get
-            {
-                return GetDimensions();
-            }
-        }
-
-        RectangleF ISvgBoundable.Bounds
-        {
-            get
-            {
-                return new RectangleF(((ISvgBoundable)this).Location, ((ISvgBoundable)this).Size);
-            }
-        }
 
         /// <summary>
         /// Gets or sets the position where the left point of the svg should start.
@@ -172,20 +147,7 @@ namespace Svg
                     base.Render(renderer);
                     break;
                 default:
-                    var prevClip = renderer.GetClip();
-                    try
-                    {
-                        var size = (this.Parent == null ? renderer.GetBoundable().Bounds.Size : GetDimensions());
-                        var clip = new RectangleF(this.X.ToDeviceValue(renderer, UnitRenderingType.Horizontal, this),
-                                                  this.Y.ToDeviceValue(renderer, UnitRenderingType.Vertical, this),
-                                                  size.Width, size.Height);
-                        renderer.SetClip(new Region(clip), CombineMode.Intersect);
-                        base.Render(renderer);
-                    }
-                    finally
-                    {
-                        renderer.SetClip(prevClip, CombineMode.Replace);
-                    }
+                    base.Render(renderer);
                     break;
             }
         }
@@ -204,84 +166,6 @@ namespace Svg
 
                 return path;
             }
-        }
-
-        /// <summary>
-        /// Gets the bounds of the svg element.
-        /// </summary>
-        /// <value>The bounds.</value>
-        public RectangleF Bounds
-        {
-            get
-            {
-                var bounds = new RectangleF();
-                foreach (var child in this.Children)
-                {
-                    RectangleF childBounds = new RectangleF();
-                    if (child is SvgFragment)
-                    {
-                        childBounds = ((SvgFragment)child).Bounds;
-                        childBounds.Offset(((SvgFragment)child).X, ((SvgFragment)child).Y);
-                    }
-                    else if (child is SvgVisualElement)
-                    {
-                        childBounds = ((SvgVisualElement)child).Bounds;
-                    }
-
-                    if (!childBounds.IsEmpty)
-                    {
-                        if (bounds.IsEmpty)
-                        {
-                            bounds = childBounds;
-                        }
-                        else
-                        {
-                            bounds = RectangleF.Union(bounds, childBounds);
-                        }
-                    }
-                }
-
-                return TransformedBounds(bounds);
-            }
-        }
-
-        public SizeF GetDimensions()
-        {
-            float w, h;
-            var isWidthperc = Width.Type == SvgUnitType.Percentage;
-            var isHeightperc = Height.Type == SvgUnitType.Percentage;
-
-            RectangleF bounds = new RectangleF();
-            if (isWidthperc || isHeightperc)
-            {
-                if (ViewBox.Width > 0 && ViewBox.Height > 0)
-                {
-                    bounds = new RectangleF(ViewBox.MinX, ViewBox.MinY, ViewBox.Width, ViewBox.Height);
-                }
-                else
-                {
-                    bounds = this.Bounds; //do just one call to the recursive bounds property
-                }
-            }
-
-            if (isWidthperc)
-            {
-                w = (bounds.Width + bounds.X) * (Width.Value * 0.01f);
-            }
-            else
-            {
-                w = Width.ToDeviceValue(null, UnitRenderingType.Horizontal, this);
-            }
-            if (isHeightperc)
-            {
-                h = (bounds.Height + bounds.Y) * (Height.Value * 0.01f);
-            }
-            else
-            {
-                h = Height.ToDeviceValue(null, UnitRenderingType.Vertical, this);
-            }
-
-            return new SizeF(w, h);
         }
 
         public override SvgElement DeepCopy()

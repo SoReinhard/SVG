@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Drawing.Drawing2D;
 using System.Linq;
+using System.Numerics;
 
 namespace Svg.Transforms
 {
@@ -42,13 +42,14 @@ namespace Svg.Transforms
         /// Multiplies all matrices
         /// </summary>
         /// <returns>The result of all transforms</returns>
-        public Matrix GetMatrix()
+        public Matrix3x2 GetMatrix()
         {
-            var transformMatrix = new Matrix();
+            var transformMatrix = Matrix3x2.Identity;
 
             foreach (var transform in this)
-                using (var matrix = transform.Matrix)
-                    transformMatrix.Multiply(matrix);
+            {
+                transformMatrix = transform.Matrix * transformMatrix;
+            }
 
             return transformMatrix;
         }
@@ -94,8 +95,8 @@ namespace Svg.Transforms
         {
             var result = new SvgTransformCollection();
             foreach (var transform in this)
-                 result.AddItem(transform.Clone() as SvgTransform);
-             return result;
+                result.AddItem(transform.Clone() as SvgTransform);
+            return result;
         }
 
         public override string ToString()

@@ -1,5 +1,3 @@
-using System.Drawing;
-using System.Drawing.Drawing2D;
 using Svg.Pathing;
 
 namespace Svg
@@ -54,13 +52,13 @@ namespace Svg
                     foreach (var segment in PathData)
                         segment.AddToPath(_path);
 
-                    if (_path.PointCount == 0)
+                    if (_path.IsEmpty)
                     {
                         if (PathData.Count > 0)
                         {
                             // special case with one move command only, see #223
                             var segment = PathData.Last;
-                            _path.AddLine(segment.End, segment.End);
+                            _path.AddElement(new LineElement(segment.End, segment.End));
                             Fill = SvgPaintServer.None;
                         }
                         else
@@ -69,10 +67,10 @@ namespace Svg
                     else if (renderer == null)
                     {
                         // Calculate boundary including stroke width.
-                        var radius = StrokeWidth * 2;
-                        var bounds = _path.GetBounds();
-                        _path.AddEllipse(bounds.Left - radius, bounds.Top - radius, 2 * radius, 2 * radius);
-                        _path.AddEllipse(bounds.Right - radius, bounds.Bottom - radius, 2 * radius, 2 * radius);
+                        //var radius = StrokeWidth * 2;
+                        //var bounds = _path.GetBounds();
+                        //_path.AddEllipse(bounds.Left - radius, bounds.Top - radius, 2 * radius, 2 * radius);
+                        //_path.AddEllipse(bounds.Right - radius, bounds.Bottom - radius, 2 * radius, 2 * radius);
                     }
                 }
 
@@ -86,15 +84,6 @@ namespace Svg
         {
             IsPathDirty = true;
             OnAttributeChanged(new AttributeEventArgs { Attribute = "d", Value = Attributes.GetAttribute<SvgPathSegmentList>("d") });
-        }
-
-        /// <summary>
-        /// Gets the bounds of the element.
-        /// </summary>
-        /// <value>The bounds.</value>
-        public override RectangleF Bounds
-        {
-            get { return Path(null).GetBounds(); }
         }
 
         public override SvgElement DeepCopy()

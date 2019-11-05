@@ -1,11 +1,10 @@
-using System.Drawing;
-using System.Drawing.Drawing2D;
+using System.Numerics;
 
 namespace Svg.Pathing
 {
     public sealed class SvgLineSegment : SvgPathSegment
     {
-        public SvgLineSegment(PointF start, PointF end)
+        public SvgLineSegment(Vector2 start, Vector2 end)
         {
             Start = start;
             End = end;
@@ -13,7 +12,7 @@ namespace Svg.Pathing
 
         public override void AddToPath(GraphicsPath graphicsPath)
         {
-            graphicsPath.AddLine(Start, End);
+            graphicsPath.AddElement(new LineElement(Start, End));
         }
 
         public override string ToString()

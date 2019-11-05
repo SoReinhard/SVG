@@ -1,6 +1,6 @@
 ﻿using System;
-using System.Drawing.Drawing2D;
 using System.Globalization;
+using System.Numerics;
 
 namespace Svg.Transforms
 {
@@ -13,13 +13,11 @@ namespace Svg.Transforms
 
         public float AngleY { get; set; }
 
-        public override Matrix Matrix
+        public override Matrix3x2 Matrix
         {
             get
             {
-                var matrix = new Matrix();
-                matrix.Shear((float)Math.Tan(AngleX / 180f * Math.PI), (float)Math.Tan(AngleY / 180f * Math.PI));
-                return matrix;
+                return Matrix3x2.CreateSkew(MathHelper.DegToRad * AngleX, MathHelper.DegToRad * AngleY);
             }
         }
 

@@ -1,11 +1,10 @@
-using System.Drawing;
-using System.Drawing.Drawing2D;
+using System.Numerics;
 
 namespace Svg.Pathing
 {
     public class SvgMoveToSegment : SvgPathSegment
     {
-        public SvgMoveToSegment(PointF moveTo)
+        public SvgMoveToSegment(Vector2 moveTo)
         {
             Start = moveTo;
             End = moveTo;

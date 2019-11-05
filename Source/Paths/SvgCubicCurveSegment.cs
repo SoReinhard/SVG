@@ -1,14 +1,13 @@
-using System.Drawing;
-using System.Drawing.Drawing2D;
+using System.Numerics;
 
 namespace Svg.Pathing
 {
     public sealed class SvgCubicCurveSegment : SvgPathSegment
     {
-        public PointF FirstControlPoint { get; set; }
-        public PointF SecondControlPoint { get; set; }
+        public Vector2 FirstControlPoint { get; set; }
+        public Vector2 SecondControlPoint { get; set; }
 
-        public SvgCubicCurveSegment(PointF start, PointF firstControlPoint, PointF secondControlPoint, PointF end)
+        public SvgCubicCurveSegment(Vector2 start, Vector2 firstControlPoint, Vector2 secondControlPoint, Vector2 end)
         {
             Start = start;
             End = end;
@@ -18,7 +17,7 @@ namespace Svg.Pathing
 
         public override void AddToPath(GraphicsPath graphicsPath)
         {
-            graphicsPath.AddBezier(Start, FirstControlPoint, SecondControlPoint, End);
+            graphicsPath.AddElement(new BezierElement(Start, FirstControlPoint, SecondControlPoint, End));
         }
 
         public override string ToString()
