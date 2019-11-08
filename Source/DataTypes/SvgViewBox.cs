@@ -113,7 +113,7 @@ namespace Svg
 
             if (Equals(Empty))
             {
-                renderer.TranslateTransform(x, y);
+                //renderer.TranslateTransform(x, y);
                 return;
             }
 
@@ -182,9 +182,9 @@ namespace Svg
                 }
             }
 
-            renderer.TranslateTransform(x, y);
-            renderer.TranslateTransform(fMinX, fMinY);
-            renderer.ScaleTransform(fScaleX, fScaleY);
+            //renderer.TranslateTransform(x, y);
+            //renderer.TranslateTransform(fMinX, fMinY);
+            //renderer.ScaleTransform(fScaleX, fScaleY);
         }
     }
 
