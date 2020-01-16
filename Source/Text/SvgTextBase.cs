@@ -277,8 +277,21 @@ namespace Svg
         /// <value></value>
         public override GraphicsPath Path(ISvgRenderer renderer)
         {
-            //ToDo reenable texts
-            return new GraphicsPath();
+            if (this._path == null || this.IsPathDirty)
+            {
+                var location = SvgUnit.GetDevicePoint(X.FirstOrDefault(), Y.FirstOrDefault(), renderer, this);
+                var size = FontSize.ToDeviceValue(renderer, UnitRenderingType.Other, this);
+                if (FontSize.Type == SvgUnitType.Em)
+                    size *= 10;
+                if (Math.Abs(size) <= 0.01)
+                    size = 16;
+
+                _path = new GraphicsPath();
+                _path.StartFigure();
+                _path.AddElement(new TextElement(location, size, Text));
+                _path.CloseFigure();
+            }
+            return _path;
         }
 
         private static readonly Regex MultipleSpaces = new Regex(@" {2,}", RegexOptions.Compiled);

@@ -169,4 +169,19 @@ namespace Svg
 
         public override GraphicsElement Clone() => new BezierElement(Start, ControlPoint1, ControlPoint2, End);
     }
+    public class TextElement : GraphicsElement
+    {
+        public Vector2 Location;
+        public float Size;
+        public string Text;
+
+        public TextElement(Vector2 location,float size,string text)
+        {
+            Location = location;
+            Size = size;
+            Text = text;
+        }
+
+        public override GraphicsElement Clone() => new TextElement(Location, Size, Text);
+    }
 }

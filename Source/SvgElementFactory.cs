@@ -181,7 +181,6 @@ namespace Svg
                 case "flood-opacity":
                 case "font":
                 case "font-family":
-                case "font-size":
                 case "font-size-adjust":
                 case "font-stretch":
                 case "font-style":
